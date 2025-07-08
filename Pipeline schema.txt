@@ -1,22 +1,32 @@
-Input: Language, Date Threshold, File Extensions
+Input: Language, Date Range, File Extensions, Archive Date Range
 │
-├── 1. Repository Discovery (GitHub Search API)
-│   └── Find repos: 10+ stars, specified language, recent activity
+├── 1. GH Archive Data Collection
+│   ├── Download hourly JSON archives for date range
+│   ├── Decompress and parse JSON events
+│   └── Filter for PushEvent types
 │
-├── 2. Repository Filtering  
-│   └── Skip repos with obvious LLM mentions in name/description
+├── 2. Repository Discovery (from GH Archive Events)
+│   ├── Extract unique repositories from push events
+│   ├── Filter by programming language (from push payloads)
+│   └── Query GitHub API for star counts (10+ stars)
 │
-├── 3. Commit Analysis
-│   └── Get commits after date threshold
+├── 3. Repository Filtering  
+│   └── Skip repos with obvious LLM mentions in commit messages/repo metadata
 │
-├── 4. File Extraction
-│   └── Download specified file types (.py, .java, .cpp)
+├── 4. Temporal Filtering
+│   ├── Filter commits after threshold date (from GH Archive)
+│   └── Identify modified files from push payloads
 │
-├── 5. LLM Detection & Scoring
+├── 5. File Extraction (GitHub API)
+│   └── Download specified file types (.py, .java, .cpp) using GitHub API
+│
+├── 6. LLM Detection & Scoring
+│   ├── Scan commit messages from GH Archive
 │   ├── Keyword detection (ChatGPT, Claude, Llama, etc.)
 │   ├── Pattern detection (common LLM signatures)
 │   └── Generate LLM-score (0-100, lower is better)
 │
-└── 6. Output Generation
+└── 7. Output Generation
     ├── Save files with original extensions
-    └── Generate CSV with metadata
+    ├── Generate CSV with metadata including GH Archive sources
+    └── Create processing logs
