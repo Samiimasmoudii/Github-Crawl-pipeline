@@ -1,0 +1,22 @@
+Input: Language, Date Threshold, File Extensions
+│
+├── 1. Repository Discovery (GitHub Search API)
+│   └── Find repos: 10+ stars, specified language, recent activity
+│
+├── 2. Repository Filtering  
+│   └── Skip repos with obvious LLM mentions in name/description
+│
+├── 3. Commit Analysis
+│   └── Get commits after date threshold
+│
+├── 4. File Extraction
+│   └── Download specified file types (.py, .java, .cpp)
+│
+├── 5. LLM Detection & Scoring
+│   ├── Keyword detection (ChatGPT, Claude, Llama, etc.)
+│   ├── Pattern detection (common LLM signatures)
+│   └── Generate LLM-score (0-100, lower is better)
+│
+└── 6. Output Generation
+    ├── Save files with original extensions
+    └── Generate CSV with metadata
