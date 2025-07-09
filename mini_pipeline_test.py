@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Mini pipeline test - combines GH Archive discovery with GitHub API file downloads
+Mini pipeline test - uses CreateEvents to find newly created repositories 
+and downloads files via GitHub API
 """
 
 import os
@@ -15,21 +16,27 @@ def mini_pipeline_test():
     print("🚀 Starting Mini Pipeline Test...")
     print("="*60)
     
-    # Step 1: Find repositories from GH Archive
-    print("\n📦 Step 1: Finding repositories from GH Archive...")
+    # Step 1: Find newly created repositories from GH Archive
+    print("\n📦 Step 1: Finding newly created repositories from GH Archive...")
     finder = RepositoryFinder()
     
-    # Use a small time window for testing
-    repositories = finder.find_repositories_from_archive("2024-01-01", 12)
-    target_repos = finder.filter_target_repositories(repositories)
+    # Use CreateEvents to find newly created repositories
+    print(f"📅 Looking for repositories created after {Config.MIN_CREATION_DATE}...")
+    newly_created_repos = finder.find_newly_created_repositories("2024-01-01", 12)
     
-    print(f"✅ Found {len(target_repos)} target repositories")
+    # Filter to target languages
+    target_repos = [repo for repo in newly_created_repos 
+                   if repo['likely_language'] in ['python', 'java', 'javascript'] 
+                   and repo['llm_score'] < 20]
+    
+    print(f"✅ Found {len(newly_created_repos)} newly created repositories")
+    print(f"🎯 Filtered to {len(target_repos)} target repositories")
     
     if not target_repos:
-        print("❌ No repositories found. Try a different date/time.")
+        print("❌ No target repositories found. Try a different date/time.")
         return False
     
-    # Step 2: Initialize GitHub API client
+    # Step 2: Initialize GitHub API client and check authentication
     print("\n🔑 Step 2: Initializing GitHub API client...")
     github_client = GitHubAPIClient()
     
@@ -37,16 +44,32 @@ def mini_pipeline_test():
     print(f"⏱️  Rate limit: {rate_limit['remaining']} requests remaining")
     print(f"🔐 Authenticated: {rate_limit['authenticated']}")
     
+    # Adjust number of repos based on authentication
+    if rate_limit['authenticated']:
+        max_repos = 500  # Test with more repos if authenticated
+        print("✅ Authenticated - testing with 5 repositories")
+    else:
+        max_repos = 2  # Test with fewer repos if not authenticated
+        print("⚠️  Not authenticated - testing with only 2 repositories to avoid rate limits")
+        print("💡 To get authenticated access:")
+        print("   Run: python test_auth.py")
+    
     # Step 3: Validate repositories and download files
-    print("\n📊 Step 3: Validating repositories and downloading files...")
+    print(f"\n📊 Step 3: Validating repositories and downloading files...")
     
     successful_downloads = []
     failed_repos = []
     
-    # Test with first 3 repositories to avoid rate limiting
-    for i, repo in enumerate(target_repos[:3]):
+    # Test with limited repositories to avoid rate limiting
+    for i, repo in enumerate(target_repos[:max_repos]):
         repo_name = repo['repo_name']
-        print(f"\n--- Processing {i+1}/3: {repo_name} ---")
+        print(f"\n--- Processing {i+1}/{max_repos}: {repo_name} ---")
+        
+        # Check rate limit before each request
+        current_rate_limit = github_client.get_rate_limit_status()
+        if current_rate_limit['remaining'] < 5:
+            print(f"⚠️  Rate limit low ({current_rate_limit['remaining']} remaining), stopping here")
+            break
         
         # Get repository info
         repo_info = github_client.get_repository_info(repo_name)
@@ -63,12 +86,14 @@ def mini_pipeline_test():
             continue
         
         print(f"✅ {repo_name}: {repo_info['stars']} stars, {repo_info['language']}")
+        print(f"   📅 Created: {repo.get('created_at', 'Unknown')}")
+        print(f"   👤 Creator: {repo.get('actor', 'Unknown')}")
         
-        # Find target files
+        # Find target files (limit depth to avoid too many API calls)
         target_files = github_client.find_target_files(
             repo_name, 
             Config.TARGET_EXTENSIONS,
-            max_depth=2  # Limit depth for testing
+            max_depth=1  # Very shallow search for testing
         )
         
         if not target_files:
@@ -118,6 +143,7 @@ def mini_pipeline_test():
             print(f"  📄 {download['repo_name']}/{download['file_info']['path']}")
             print(f"     ⭐ {download['repo_info']['stars']} stars")
             print(f"     🎯 {download['repo_info']['language']}")
+            print(f"     📅 Created: {download['archive_repo'].get('created_at', 'Unknown')}")
             print(f"     📝 {download['file_content']['size']} bytes")
     
     if failed_repos:
@@ -158,7 +184,8 @@ def mini_pipeline_test():
     success = len(successful_downloads) > 0
     if success:
         print("\n🎉 Mini pipeline test completed successfully!")
-        print(f"✅ Downloaded {len(successful_downloads)} files from {len(set(d['repo_name'] for d in successful_downloads))} repositories")
+        print(f"✅ Downloaded {len(successful_downloads)} files from {len(set(d['repo_name'] for d in successful_downloads))} newly created repositories")
+        print(f"📅 All repositories were created after {Config.MIN_CREATION_DATE}")
     else:
         print("\n❌ Mini pipeline test failed - no files downloaded")
     

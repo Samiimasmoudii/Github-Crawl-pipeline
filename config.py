@@ -2,6 +2,10 @@
 
 import os
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class Config:
     # GH Archive settings
@@ -19,6 +23,9 @@ class Config:
     MIN_STARS = 10
     MAX_REPOS = 100  # Keep small for testing
     
+    # Creation date filtering (optional)
+    MIN_CREATION_DATE = "2024-01-01"  # Only include repos created after this date (YYYY-MM-DD)
+    
     # LLM detection keywords
     LLM_KEYWORDS = [
         "chatgpt", "claude", "llama", "mistral", "gpt-4", "gemini", "copilot",
@@ -31,7 +38,7 @@ class Config:
     EXTRACTED_FILES_DIR = os.path.join(OUTPUT_DIR, "extracted_files")
     LOGS_DIR = os.path.join(OUTPUT_DIR, "logs")
     
-    # GitHub API (we'll add this later)
+    # GitHub API - now loads from .env file
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
     
     @classmethod
