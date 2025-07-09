@@ -14,7 +14,7 @@ class GHArchiveClient:
             'User-Agent': 'GH-Archive-Pipeline/1.0'
         })
         
-    def download_archive(self, date_str, hour, save_path=None):
+    def download_archive(self, date_str, hour, save_path="/Data"):
         """
         Download a single GH Archive file
         
