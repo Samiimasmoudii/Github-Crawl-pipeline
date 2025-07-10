@@ -85,10 +85,7 @@ gharchive_data/
 archive_downloads/
 
 # Pipeline output
-output/
-extracted_files/
-logs/
-*.log
+
 
 # Processing state files
 *.checkpoint

@@ -20,7 +20,7 @@ class Config:
     TARGET_EXTENSIONS = [".py", ".java", ".js"]
     
     # Repository filtering
-    MIN_STARS = 10
+    MIN_STARS = 2
     MAX_REPOS = 100  # Keep small for testing
     
     # Creation date filtering (optional)
